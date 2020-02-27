@@ -1,14 +1,6 @@
-//
-//  ColorTabs.swift
-//  ColorMatchTabs
-//
-//  Created by Sergey Butenko on 13/6/16.
-//  Copyright © 2016 Yalantis. All rights reserved.
-//
-
 import UIKit
 
-private let HighlighterViewOffScreenOffset: CGFloat = 44
+private let HighlighterViewOffScreenOffset: CGFloat = 0
 
 private let SwitchAnimationDuration: TimeInterval = 0.3
 private let HighlighterAnimationDuration: TimeInterval = SwitchAnimationDuration / 2
@@ -17,6 +9,7 @@ private let HighlighterAnimationDuration: TimeInterval = SwitchAnimationDuration
     
     func numberOfItems(inTabSwitcher tabSwitcher: ColorTabs) -> Int
     func tabSwitcher(_ tabSwitcher: ColorTabs, titleAt index: Int) -> String
+    func tabSwitcher(_ tabSwitcher: ColorTabs, titleFontAt index: Int) -> UIFont
     func tabSwitcher(_ tabSwitcher: ColorTabs, iconAt index: Int) -> UIImage
     func tabSwitcher(_ tabSwitcher: ColorTabs, hightlightedIconAt index: Int) -> UIImage
     func tabSwitcher(_ tabSwitcher: ColorTabs, tintColorAt index: Int) -> UIColor
@@ -31,7 +24,6 @@ open class ColorTabs: UIControl {
     open var titleTextColor: UIColor = .white
     
     /// Font for titles.
-    open var titleFont: UIFont = .systemFont(ofSize: 14)
     
     private let stackView = UIStackView()
     private var buttons: [UIButton] = []
@@ -109,7 +101,7 @@ open class ColorTabs: UIControl {
     
     open func setHighlighterHidden(_ hidden: Bool) {
         let sourceHeight = hidden ? bounds.height : 0
-        let targetHeight = hidden ? 0 : bounds.height
+        let targetHeight = hidden ? 0 : bounds.height - 20
         
         let animation: CAAnimation = {
             $0.fromValue = sourceHeight / 2
@@ -171,6 +163,7 @@ private extension ColorTabs {
         button.setImage(dataSource.tabSwitcher(self, hightlightedIconAt: index), for: .selected)
         button.addTarget(self, action: #selector(selectButton(_:)), for: .touchUpInside)
         button.imageView?.contentMode = .scaleAspectFit
+        button.imageEdgeInsets = UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 0)
         
         return button
     }
@@ -183,7 +176,8 @@ private extension ColorTabs {
         label.text = dataSource.tabSwitcher(self, titleAt: index)
         label.textColor = titleTextColor
         label.adjustsFontSizeToFitWidth = true
-        label.font = titleFont
+        label.sizeToFit()
+        label.font = dataSource.tabSwitcher(self, titleFontAt: index)
         
         return label
     }
@@ -194,7 +188,7 @@ private extension ColorTabs {
     
     @objc
     func selectButton(_ sender: UIButton) {
-        if let index = buttons.index(of: sender) {
+        if let index = buttons.firstIndex(of: sender) {
             selectedSegmentIndex = index
         }
     }
@@ -231,6 +225,7 @@ private extension ColorTabs {
     }
     
     func moveHighlighterView(toItemAt toIndex: Int) {
+        
         guard let countItems = dataSource?.numberOfItems(inTabSwitcher: self), countItems > toIndex else {
             return
         }
@@ -242,12 +237,10 @@ private extension ColorTabs {
         
         // offset for first item
         let point = convert(toIcon.frame.origin, to: self)
-        let offsetForFirstItem: CGFloat = toIndex == 0 ? -HighlighterViewOffScreenOffset : 0
-        highlighterView.frame.origin.x = point.x + offsetForFirstItem
+        highlighterView.frame.origin.x = point.x + 12.5
+        highlighterView.frame.origin.y = 10
         
-        // offset for last item
-        let offsetForLastItem: CGFloat = toIndex == countItems - 1 ? HighlighterViewOffScreenOffset : 0
-        highlighterView.frame.size.width = toLabel.bounds.width + (toLabel.frame.origin.x - toIcon.frame.origin.x) + 10 - offsetForFirstItem + offsetForLastItem
+        highlighterView.frame.size.width = toLabel.bounds.width + (toLabel.frame.origin.x - toIcon.frame.origin.x) - 27.5
         
         highlighterView.backgroundColor = dataSource!.tabSwitcher(self, tintColorAt: toIndex)
     }

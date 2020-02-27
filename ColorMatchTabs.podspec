@@ -9,7 +9,7 @@ Pod::Spec.new do |s|
   s.author           = "Yalantis"
   s.social_media_url = "http://twitter.com/yalantis"
   
-  s.platform         = :ios, "9.0"
+  s.platform         = :ios, "12.0"
   s.source           = { :git => "https://github.com/Yalantis/ColorMatchTabs.git", :tag => s.version }
 
   s.source_files     = "ColorMatchTabs/Classes/**/*.{swift}"

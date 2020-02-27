@@ -1,11 +1,3 @@
-//
-//  ColorMatchTabsViewController.swift
-//  ColorMatchTabs
-//
-//  Created by Serhii Butenko on 24/6/16.
-//  Copyright © 2016 Yalantis. All rights reserved.
-//
-
 import UIKit
 
 public protocol ColorMatchTabsViewControllerDataSource: class {
@@ -15,6 +7,7 @@ public protocol ColorMatchTabsViewControllerDataSource: class {
     func tabsViewController(_ controller: ColorMatchTabsViewController, viewControllerAt index: Int) -> UIViewController
     
     func tabsViewController(_ controller: ColorMatchTabsViewController, titleAt index: Int) -> String
+    func tabsViewController(_ controller: ColorMatchTabsViewController, titleFontAt index: Int) -> UIFont
     func tabsViewController(_ controller: ColorMatchTabsViewController, iconAt index: Int) -> UIImage
     func tabsViewController(_ controller: ColorMatchTabsViewController, hightlightedIconAt index: Int) -> UIImage
     func tabsViewController(_ controller: ColorMatchTabsViewController, tintColorAt index: Int) -> UIColor
@@ -52,15 +45,6 @@ open class ColorMatchTabsViewController: UITabBarController {
     }
     
     public let titleLabel = UILabel()
-    open var popoverViewController: PopoverViewController? {
-        didSet {
-            popoverViewController?.menu.dataSource = self
-            popoverViewController?.dataSource = self
-            
-            let hidePopoverButton = popoverViewController == nil
-            _view.setCircleMenuButtonHidden(hidePopoverButton)
-        }
-    }
     
     override open var title: String? {
         didSet {
@@ -73,7 +57,6 @@ open class ColorMatchTabsViewController: UITabBarController {
     }
     
     private var icons: [UIImageView] = []
-    private let circleTransition = CircleTransition()
     
     var _view: MenuView! {
         return view as? MenuView
@@ -91,7 +74,6 @@ open class ColorMatchTabsViewController: UITabBarController {
         setupTabSwitcher()
         setupIcons()
         setupScrollMenu()
-        setupCircleMenu()
         updateScrollEnabled()
     }
     
@@ -111,7 +93,6 @@ open class ColorMatchTabsViewController: UITabBarController {
     open func reloadData() {
         _view.tabs.reloadData()
         _view.scrollMenu.reloadData()
-        popoverViewController?.menu.reloadData()
         
         updateNavigationBar(forSelectedIndex: 0)
         setupIcons()
@@ -131,7 +112,7 @@ private extension ColorMatchTabsViewController {
         icons = []
         
         for index in 0..<dataSource.numberOfItems(inController: self) {
-            let size = _view.circleMenuButton.bounds.size
+            let size = CGSize(width: 0, height: 0)
             let frame = CGRect(origin: .zero, size: CGSize(width: size.width / 2, height: size.height / 2))
             let iconImageView = UIImageView(frame: frame)
             iconImageView.image = dataSource.tabsViewController(self, hightlightedIconAt: index)
@@ -162,10 +143,6 @@ private extension ColorMatchTabsViewController {
     
     func setupScrollMenu() {
         _view.scrollMenu.menuDelegate = self
-    }
-    
-    func setupCircleMenu() {
-        _view.circleMenuButton.addTarget(self, action: #selector(showPopover(_:)), for: .touchUpInside)
     }
     
     func updateNavigationBar(forSelectedIndex index: Int) {
@@ -212,54 +189,7 @@ private extension ColorMatchTabsViewController {
             )
         }
     }
-    
-    @objc
-    func showPopover(_ sender: AnyObject?) {
-        showDroppingItems()
-        showPopover()
-    }
-    
-    func showDroppingItems() {
-        UIView.animate(withDuration: AnimationDuration) {
-            self._view.tabs.setHighlighterHidden(true)
-        }
-        
-        for (index, iconImageView) in icons.enumerated() {
-            iconImageView.center = _view.tabs.centerOfItem(atIndex: index)
-            iconImageView.isHidden = false
-            
-            UIView.animate(
-                withDuration: AnimationDuration,
-                delay: 0,
-                usingSpringWithDamping: 0.7,
-                initialSpringVelocity: 3,
-                options: [],
-                animations: {
-                    iconImageView.image = self.colorMatchTabDataSource?.tabsViewController(self, hightlightedIconAt: index)
-                    iconImageView.center = CGPoint(
-                        x: iconImageView.center.x,
-                        y: iconImageView.center.y + self.view.frame.height / 2
-                    )
-            },
-                completion: nil
-            )
-        }
-        _view.tabs.setIconsHidden(true)
-    }
-    
-    func showPopover() {
-        guard let popoverViewController = popoverViewController else {
-            return
-        }
-        
-        popoverViewController.transitioningDelegate = self
-        popoverViewController.highlightedItemIndex = _view.tabs.selectedSegmentIndex
-        popoverViewController.view.backgroundColor = .white
-        popoverViewController.reloadData()
-        
-        present(popoverViewController, animated: true, completion: nil)
-    }
-    
+
     @objc
     func changeContent(_ sender: ColorTabs) {
         updateNavigationBar(forSelectedIndex: sender.selectedSegmentIndex)
@@ -282,30 +212,6 @@ extension ColorMatchTabsViewController: ScrollMenuDelegate {
     
 }
 
-extension ColorMatchTabsViewController: UIViewControllerTransitioningDelegate {
-    
-    open func animationController(forPresented presented: UIViewController, presenting: UIViewController, source: UIViewController) -> UIViewControllerAnimatedTransitioning? {
-        presented.view.frame = presenting.view.frame
-      
-        circleTransition.mode = .show
-        circleTransition.startPoint = _view.circleMenuButton.center
-        
-        return circleTransition
-    }
-    
-    open func animationController(forDismissed dismissed: UIViewController) -> UIViewControllerAnimatedTransitioning? {
-        guard let dismissedViewController = dismissed as? PopoverViewController else {
-            return nil
-        }
-        
-        circleTransition.mode = .hide
-        circleTransition.startPoint = dismissedViewController.menu.center
-        
-        return circleTransition
-    }
-    
-}
-
 // MARK: - Data sources
 
 extension ColorMatchTabsViewController: ColorTabsDataSource {
@@ -316,6 +222,10 @@ extension ColorMatchTabsViewController: ColorTabsDataSource {
     
     open func tabSwitcher(_ tabSwitcher: ColorTabs, titleAt index: Int) -> String {
         return colorMatchTabDataSource!.tabsViewController(self, titleAt: index)
+    }
+    
+    public func tabSwitcher(_ tabSwitcher: ColorTabs, titleFontAt index: Int) -> UIFont {
+        return (colorMatchTabDataSource?.tabsViewController(self, titleFontAt: index))!
     }
     
     open func tabSwitcher(_ tabSwitcher: ColorTabs, iconAt index: Int) -> UIImage {
@@ -344,30 +254,4 @@ extension ColorMatchTabsViewController: ScrollMenuDataSource {
     
 }
 
-extension ColorMatchTabsViewController: CircleMenuDataSource {
-    
-    open func numberOfItems(inMenu circleMenu: CircleMenu) -> Int {
-        return colorMatchTabDataSource?.numberOfItems(inController: self) ?? 0
-    }
-    
-    open func circleMenu(_ circleMenu: CircleMenu, tintColorAt index: Int) -> UIColor {
-        return colorMatchTabDataSource!.tabsViewController(self, tintColorAt: index)
-    }
-    
-}
 
-extension ColorMatchTabsViewController: PopoverViewControllerDataSource {
-    
-    open func numberOfItems(inPopoverViewController popoverViewController: PopoverViewController) -> Int {
-        return colorMatchTabDataSource?.numberOfItems(inController: self) ?? 0
-    }
-    
-    open func popoverViewController(_ popoverViewController: PopoverViewController, iconAt index: Int) -> UIImage {
-        return colorMatchTabDataSource!.tabsViewController(self, iconAt: index)
-    }
-    
-    open func popoverViewController(_ popoverViewController: PopoverViewController, hightlightedIconAt index: Int) -> UIImage {
-        return colorMatchTabDataSource!.tabsViewController(self, hightlightedIconAt: index)
-    }
-    
-}

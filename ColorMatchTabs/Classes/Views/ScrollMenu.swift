@@ -1,11 +1,3 @@
-//
-//  ScrollMenu.swift
-//  ColorMatchTabs
-//
-//  Created by anna on 6/15/16.
-//  Copyright © 2016 Yalantis. All rights reserved.
-//
-
 import UIKit
 
 @objc public protocol ScrollMenuDelegate: UIScrollViewDelegate {
@@ -43,7 +35,7 @@ open class ScrollMenu: UIScrollView {
     override open var contentOffset: CGPoint {
         didSet {
             if manualSelection && destinationIndex != indexOfVisibleItem {
-                return
+                return 
             }
             if !manualSelection {
                 showAllContent()
@@ -76,9 +68,7 @@ open class ScrollMenu: UIScrollView {
     private func commonInit() {
         isPagingEnabled = true
         bounces = false
-        if #available(iOS 11.0, *) {
-            contentInsetAdjustmentBehavior = .never
-        }
+        contentInsetAdjustmentBehavior = .never
     }
     
     override open func layoutSubviews() {
